@@ -2,4 +2,5 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/edulogo_background"/>
     <foreground android:drawable="@mipmap/edulogo_foreground"/>
+    <monochrome android:drawable="@mipmap/edulogo_foreground"/>
 </adaptive-icon>

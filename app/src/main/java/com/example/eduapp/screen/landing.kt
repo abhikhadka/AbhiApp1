@@ -22,7 +22,7 @@ fun LandingScreen(navController: NavHostController, modifier: Modifier = Modifie
     val logoBackgroundColor = Color(0xFFF9F9F1) 
     
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(logoBackgroundColor)
     ) {
@@ -70,7 +70,7 @@ fun LandingScreen(navController: NavHostController, modifier: Modifier = Modifie
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
                     .height(64.dp),
-                border = ButtonDefaults.outlinedButtonBorder.copy(width = 2.dp),
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 2.dp),
                 shape = RoundedCornerShape(32.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2196F3))
             ) {
