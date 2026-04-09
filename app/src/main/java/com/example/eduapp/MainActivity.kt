@@ -3,6 +3,7 @@ package com.example.eduapp
 
 import ImageDisplayScreen
 import android.content.Context
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,9 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -36,15 +35,86 @@ import com.example.eduapp.ui.theme.EduAppTheme
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+    private var mediaPlayer: MediaPlayer? = null
+    // Always start muted to ensure music never plays automatically
+    private var isMuted = mutableStateOf(true)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val currentContext = applicationContext
+        
+        // We do NOT load the preference here to ensure it ALWAYS starts muted
+        // as per the requirement "never play ... until the user clicks"
+        isMuted.value = true
+        
+        setupMusic()
+
         setContent {
             EduAppTheme {
-                AppNav(currentContext)
+                AppNav(this, isMuted)
             }
         }
+    }
+
+    private fun setupMusic() {
+        try {
+            val resId = resources.getIdentifier("bg_music", "raw", packageName)
+            if (resId != 0) {
+                mediaPlayer = MediaPlayer.create(this, resId)
+                mediaPlayer?.isLooping = true
+                // Music will NOT start here because isMuted is true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun toggleMusic() {
+        isMuted.value = !isMuted.value
+        
+        // Optionally save to prefs if you want to remember for the NEXT toggle within the session
+        // but since we want it to start muted every launch, we just manage the live state.
+        
+        if (isMuted.value) {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.pause()
+            }
+        } else {
+            if (mediaPlayer == null) {
+                setupMusic()
+            }
+            mediaPlayer?.start()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Stop/Pause music when app is not in focus (closed or backgrounded)
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.pause()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Only resume if the user had manually unmuted it
+        if (!isMuted.value) {
+            mediaPlayer?.start()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Extra precaution for "closing" the app
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.pause()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }
 
@@ -71,8 +141,10 @@ fun SplashScreen(onTimeout: () -> Unit) {
 }
 
 @Composable
-fun AppNav(currentContext: Context) {
+fun AppNav(activity: MainActivity, isMuted: State<Boolean>) {
     val navController = rememberNavController()
+    val context = activity.applicationContext
+    
     NavHost(navController, startDestination = "splash"){
         composable("splash") {
             SplashScreen(onTimeout = {
@@ -81,14 +153,20 @@ fun AppNav(currentContext: Context) {
                 }
             })
         }
-        composable("landing"){ LandingScreen(navController) }
-        composable("game") { GameScreen(currentContext, navController) }
+        composable("landing"){ 
+            LandingScreen(
+                navController = navController, 
+                isMuted = isMuted.value,
+                onToggleMusic = { activity.toggleMusic() }
+            ) 
+        }
+        composable("game") { GameScreen(context, navController) }
         composable("setting") { SettingScreen(navController) }
-        composable("score") { ScoreScreen(currentContext, navController) }
-        composable("testDB") { TestDBScreen(currentContext) }
+        composable("score") { ScoreScreen(context, navController) }
+        composable("testDB") { TestDBScreen(context) }
         composable("imageDisplay") {
             ImageDisplayScreen(
-                context = currentContext,
+                context = context,
                 folder = "1",
                 imageName = "level01_pic01_0.png"
             )
