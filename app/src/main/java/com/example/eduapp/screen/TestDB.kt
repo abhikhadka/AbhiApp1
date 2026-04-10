@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.room.Room
 import com.example.eduapp.database.AppDatabase
 import com.example.eduapp.viewmodel.AppViewModel
 import com.example.eduapp.viewmodel.AppViewModelFactory
+import com.example.eduapp.ui.theme.AppFont
 
 @Composable
 fun TestDBScreen(currentContext: Context, modifier: Modifier = Modifier) {
@@ -49,8 +51,9 @@ fun TestDBScreen(currentContext: Context, modifier: Modifier = Modifier) {
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("Username") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Username", fontFamily = AppFont) },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = LocalTextStyle.current.copy(fontFamily = AppFont)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -60,7 +63,7 @@ fun TestDBScreen(currentContext: Context, modifier: Modifier = Modifier) {
                 viewModel.addUser(name)
                 name = ""
             }) {
-                Text("Add User")
+                Text("Add User", fontFamily = AppFont)
             }
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -68,14 +71,15 @@ fun TestDBScreen(currentContext: Context, modifier: Modifier = Modifier) {
             Button(onClick = {
                 viewModel.clearUsers()
             }) {
-                Text("Clear")
+                Text("Clear", fontFamily = AppFont)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
         LazyColumn {
             items(users) { user ->
                 Text(
-                    text = "ID: ${user.id}, ${user.username}, score=${user.score}, level=${user.level}"
+                    text = "ID: ${user.id}, ${user.username}, score=${user.score}, level=${user.level}",
+                    fontFamily = AppFont
                 )
             }
         }

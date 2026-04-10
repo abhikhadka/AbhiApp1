@@ -161,7 +161,13 @@ fun AppNav(activity: MainActivity, isMuted: State<Boolean>) {
             ) 
         }
         composable("game") { GameScreen(context, navController) }
-        composable("setting") { SettingScreen(navController) }
+        composable("setting") { 
+            SettingScreen(
+                navController = navController,
+                isMuted = isMuted.value,
+                onToggleMusic = { activity.toggleMusic() }
+            ) 
+        }
         composable("score") { ScoreScreen(context, navController) }
         composable("testDB") { TestDBScreen(context) }
         composable("imageDisplay") {

@@ -1,32 +1,47 @@
 package com.example.eduapp.screen
 
 import android.content.Context
+import android.content.res.Configuration
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.eduapp.ui.theme.LogoBackground
 import com.example.eduapp.viewmodel.AppViewModel
+import com.example.eduapp.ui.theme.AppFont
+import helper.findActivity
 import helper.rememberAssetImage
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(currentContext: Context, navController: NavHostController, modifier: Modifier = Modifier) {
-    val viewModel: AppViewModel = koinViewModel()
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     
+    val viewModel: AppViewModel = koinViewModel(
+        viewModelStoreOwner = activity ?: (context as ComponentActivity)
+    )
+    
+    val currentUsername = viewModel.currentUsername.value
     val currentLevel = viewModel.selectedLevel.intValue
     val currentImages = viewModel.questionImages.value
     val currentIndex = viewModel.currentQuestionIndex.intValue
@@ -34,164 +49,185 @@ fun GameScreen(currentContext: Context, navController: NavHostController, modifi
     val score = viewModel.score.intValue
     val formattedTime = viewModel.getFormattedTime()
 
-    // Answer state
     var answerText by remember { mutableStateOf("") }
 
-    // Load current image
     val currentImageName = if (currentImages.isNotEmpty() && currentIndex < currentImages.size) {
         currentImages[currentIndex]
     } else ""
     
     val imageBitmap = if (currentImageName.isNotEmpty()) {
-        rememberAssetImage(currentContext, "$currentLevel/$currentImageName")
+        rememberAssetImage(context, "$currentLevel/$currentImageName")
     } else null
 
     Scaffold(
-        containerColor = LogoBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         if (isGameOver) {
-            // Game Over Result View
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(text = "Game Over!", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Well done, ${viewModel.currentUsername.value}!", fontSize = 20.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "Final Score: $score / 50", fontSize = 24.sp, fontWeight = FontWeight.Medium)
-                Text(text = "Time: $formattedTime", fontSize = 18.sp, color = Color.Gray)
-                
-                Spacer(modifier = Modifier.height(40.dp))
-                
-                Button(
-                    onClick = { navController.navigate("score") },
-                    modifier = Modifier.fillMaxWidth(0.8f).height(64.dp),
-                    shape = RoundedCornerShape(32.dp)
-                ) {
-                    Text("SEE ALL STATISTICS")
-                }
-            }
+            GameOverContent(innerPadding, currentUsername, score, formattedTime, isLandscape, navController)
         } else {
-            // Main Game UI matching the requested layout
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp)
-                    .border(2.dp, Color(0xFFE0C097), RoundedCornerShape(8.dp)) // Subtle frame like in image
-                    .padding(16.dp)
+                    .padding(8.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .padding(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Header Section
+                if (isLandscape) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Score: $score (/50)",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF555555)
-                        )
-                        Text(
-                            text = "Puzzle: ${currentIndex + 1} (/5)",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF555555)
-                        )
-                    }
-                    
-                    Text(
-                        text = "Duration: $formattedTime",
-                        fontSize = 18.sp,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                        color = Color(0xFF555555)
-                    )
+                        // Left Side: Image
+                        Box(
+                            modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PuzzleImage(imageBitmap)
+                        }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Player: ${viewModel.currentUsername.value}",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF333333)
-                        )
-                        Text(
-                            text = "Level: $currentLevel",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF333333)
-                        )
-                    }
-
-                    // Puzzle Image Section
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (imageBitmap != null) {
-                            Image(
-                                bitmap = imageBitmap,
-                                contentDescription = "Math Puzzle",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
-                            CircularProgressIndicator()
+                        // Right Side: Controls and Stats
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            GameStatsHeader(currentUsername, score, currentLevel, currentIndex)
+                            Text(text = "Time: $formattedTime", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            AnswerInputArea(answerText, { if (it.all { char -> char.isDigit() }) answerText = it }) {
+                                viewModel.submitAnswer(context, answerText)
+                                answerText = ""
+                            }
                         }
                     }
-
-                    // Answer Section
+                } else {
+                    // Portrait Layout
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        OutlinedTextField(
-                            value = answerText,
-                            onValueChange = { if (it.all { char -> char.isDigit() }) answerText = it },
-                            label = { Text("Enter your answer") },
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFFE0C097),
-                                unfocusedBorderColor = Color.Gray
-                            )
-                        )
+                        GameStatsHeader(currentUsername, score, currentLevel, currentIndex)
+                        Text(text = "Time: $formattedTime", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
+                        
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                            PuzzleImage(imageBitmap)
+                        }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { 
-                                viewModel.submitAnswer(currentContext, answerText)
-                                answerText = "" 
-                            },
-                            enabled = answerText.isNotEmpty(),
-                            modifier = Modifier
-                                .fillMaxWidth(0.9f)
-                                .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("SUBMIT", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        AnswerInputArea(answerText, { if (it.all { char -> char.isDigit() }) answerText = it }) {
+                            viewModel.submitAnswer(context, answerText)
+                            answerText = ""
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun GameOverContent(
+    innerPadding: PaddingValues, 
+    username: String, 
+    score: Int, 
+    time: String, 
+    isLandscape: Boolean,
+    navController: NavHostController
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("Game Over!", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Well done, $username!", style = MaterialTheme.typography.titleLarge)
+        
+        if (isLandscape) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Score: $score / 50", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(24.dp))
+                Text("Time: $time", style = MaterialTheme.typography.titleLarge)
+            }
+        } else {
+            Text("Score: $score / 50", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
+            Text("Time: $time", style = MaterialTheme.typography.titleLarge)
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(
+            onClick = { navController.navigate("score") },
+            modifier = Modifier.fillMaxWidth(if (isLandscape) 0.5f else 0.85f).height(56.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Text("SEE LEADERBOARD", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@Composable
+fun PuzzleImage(imageBitmap: androidx.compose.ui.graphics.ImageBitmap?) {
+    if (imageBitmap != null) {
+        Card(
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Image(
+                bitmap = imageBitmap,
+                contentDescription = "Math Puzzle",
+                modifier = Modifier.padding(8.dp).fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        }
+    } else {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+fun GameStatsHeader(username: String, score: Int, level: Int, index: Int) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column {
+            Text("Player: $username", style = MaterialTheme.typography.labelSmall)
+            Text("Score: $score", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text("Level: $level", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.secondary)
+            Text("Puzzle: ${index + 1}/5", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+fun AnswerInputArea(text: String, onValueChange: (String) -> Unit, onSubmit: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = onValueChange,
+            placeholder = { Text("Answer", fontFamily = AppFont) },
+            modifier = Modifier.fillMaxWidth(0.9f),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(fontFamily = AppFont)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onSubmit,
+            enabled = text.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth(0.9f).height(52.dp),
+            shape = RoundedCornerShape(26.dp)
+        ) {
+            Text("SUBMIT")
         }
     }
 }
