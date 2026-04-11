@@ -2,7 +2,6 @@
 package com.example.eduapp
 
 import ImageDisplayScreen
-import android.content.Context
 import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,9 +22,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.eduapp.navigation.Screen
 import com.example.eduapp.screen.GameScreen
 import com.example.eduapp.screen.LandingScreen
 import com.example.eduapp.screen.ScoreScreen
@@ -43,10 +45,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // We do NOT load the preference here to ensure it ALWAYS starts muted
-        // as per the requirement "never play ... until the user clicks"
         isMuted.value = true
-        
         setupMusic()
 
         setContent {
@@ -62,7 +61,6 @@ class MainActivity : ComponentActivity() {
             if (resId != 0) {
                 mediaPlayer = MediaPlayer.create(this, resId)
                 mediaPlayer?.isLooping = true
-                // Music will NOT start here because isMuted is true
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -71,10 +69,6 @@ class MainActivity : ComponentActivity() {
 
     fun toggleMusic() {
         isMuted.value = !isMuted.value
-        
-        // Optionally save to prefs if you want to remember for the NEXT toggle within the session
-        // but since we want it to start muted every launch, we just manage the live state.
-        
         if (isMuted.value) {
             if (mediaPlayer?.isPlaying == true) {
                 mediaPlayer?.pause()
@@ -89,7 +83,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Stop/Pause music when app is not in focus (closed or backgrounded)
         if (mediaPlayer?.isPlaying == true) {
             mediaPlayer?.pause()
         }
@@ -97,7 +90,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Only resume if the user had manually unmuted it
         if (!isMuted.value) {
             mediaPlayer?.start()
         }
@@ -105,7 +97,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        // Extra precaution for "closing" the app
         if (mediaPlayer?.isPlaying == true) {
             mediaPlayer?.pause()
         }
@@ -123,13 +114,13 @@ fun SplashScreen(onTimeout: () -> Unit) {
     val alpha = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         alpha.animateTo(1f, animationSpec = tween(1000))
-        delay(1000) // Wait for 1 second
+        delay(1000)
         onTimeout()
     }
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9F9F1)), // Matching your logo background
+            .background(Color(0xFFF9F9F1)),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -145,37 +136,43 @@ fun AppNav(activity: MainActivity, isMuted: State<Boolean>) {
     val navController = rememberNavController()
     val context = activity.applicationContext
     
-    NavHost(navController, startDestination = "splash"){
-        composable("splash") {
+    NavHost(navController, startDestination = Screen.Splash.route){
+        composable(Screen.Splash.route) {
             SplashScreen(onTimeout = {
-                navController.navigate("landing") {
-                    popUpTo("splash") { inclusive = true }
+                navController.navigate(Screen.Landing.route) {
+                    popUpTo(Screen.Splash.route) { inclusive = true }
                 }
             })
         }
-        composable("landing"){ 
+        composable(Screen.Landing.route){ 
             LandingScreen(
                 navController = navController, 
                 isMuted = isMuted.value,
                 onToggleMusic = { activity.toggleMusic() }
             ) 
         }
-        composable("game") { GameScreen(context, navController) }
-        composable("setting") { 
+        composable(Screen.Game.route) { GameScreen(context, navController) }
+        composable(Screen.Setting.route) { 
             SettingScreen(
                 navController = navController,
                 isMuted = isMuted.value,
                 onToggleMusic = { activity.toggleMusic() }
             ) 
         }
-        composable("score") { ScoreScreen(context, navController) }
-        composable("testDB") { TestDBScreen(context) }
-        composable("imageDisplay") {
-            ImageDisplayScreen(
-                context = context,
-                folder = "1",
-                imageName = "level01_pic01_0.png"
+        composable(Screen.Score.route) { ScoreScreen(context, navController) }
+        composable(Screen.TestDB.route) { TestDBScreen(context) }
+        
+        // Advanced Navigation: Screen with Arguments
+        composable(
+            route = Screen.ImageDisplay.route,
+            arguments = listOf(
+                navArgument("folder") { type = NavType.StringType },
+                navArgument("imageName") { type = NavType.StringType }
             )
+        ) { backStackEntry ->
+            val folder = backStackEntry.arguments?.getString("folder") ?: "1"
+            val imageName = backStackEntry.arguments?.getString("imageName") ?: ""
+            ImageDisplayScreen(context, folder, imageName)
         }
     }
 }

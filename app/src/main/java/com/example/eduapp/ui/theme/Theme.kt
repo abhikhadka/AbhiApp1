@@ -12,30 +12,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = EduGreen,
-    secondary = EduBlue,
-    tertiary = Pink80,
-    onPrimary = Color.White,
-    onSecondary = Color.White
+    primary = PrimaryGreen,
+    onPrimary = OnPrimaryGreen,
+    primaryContainer = PrimaryContainerGreen,
+    onPrimaryContainer = OnPrimaryContainerGreen,
+    secondary = SecondaryBlue,
+    onSecondary = OnSecondaryBlue,
+    secondaryContainer = SecondaryContainerBlue,
+    onSecondaryContainer = OnSecondaryContainerBlue,
+    error = ErrorRed,
+    onError = OnErrorRed,
+    background = Color(0xFF1B1B1F),
+    surface = Color(0xFF1B1B1F),
+    onBackground = Color(0xFFE3E2E6),
+    onSurface = Color(0xFFE3E2E6),
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = EduGreen,
-    secondary = EduBlue,
-    tertiary = Pink40,
+    primary = PrimaryGreen,
+    onPrimary = OnPrimaryGreen,
+    primaryContainer = PrimaryContainerGreen,
+    onPrimaryContainer = OnPrimaryContainerGreen,
+    secondary = SecondaryBlue,
+    onSecondary = OnSecondaryBlue,
+    secondaryContainer = SecondaryContainerBlue,
+    onSecondaryContainer = OnSecondaryContainerBlue,
+    error = ErrorRed,
+    onError = OnErrorRed,
     background = LogoBackground,
     surface = LogoBackground,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onBackground = EduDarkText,
-    onSurface = EduDarkText
+    onBackground = OnSurfaceLight,
+    onSurface = OnSurfaceLight,
 )
 
 @Composable
 fun EduAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Disabled to maintain consistent brand colors
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

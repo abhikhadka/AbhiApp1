@@ -7,16 +7,26 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.eduapp.R
-import com.example.eduapp.database.AppDao
+import com.example.eduapp.database.LevelStats
+import com.example.eduapp.database.SyncWorker
 import com.example.eduapp.database.User
+import com.example.eduapp.repository.UserRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-class AppViewModel(private val dao: AppDao) : ViewModel() {
+class AppViewModel(private val repository: UserRepository) : ViewModel() {
 
-    val users: Flow<List<User>> = dao.getAllUsers()
+    val users: Flow<List<User>> = repository.allUsers
+    
+    // Advanced feature: Level statistics calculated via Room Query (now via Repository)
+    val levelStats: Flow<List<LevelStats>> = repository.levelStats
     
     // Track current user's info
     var currentUsername = mutableStateOf("")
@@ -33,7 +43,6 @@ class AppViewModel(private val dao: AppDao) : ViewModel() {
     var currentTime = mutableLongStateOf(0L)
 
     fun initializeGame(context: Context, level: Int) {
-        // Load images synchronously to avoid the "loading" flicker on screen entry
         try {
             val allAssets = context.assets.list(level.toString()) ?: emptyArray()
             val images = allAssets.filter { file ->
@@ -52,7 +61,6 @@ class AppViewModel(private val dao: AppDao) : ViewModel() {
         score.intValue = 0
         isGameOver.value = false
         
-        // Start timer
         startTime.longValue = System.currentTimeMillis()
         currentTime.longValue = 0L
         startTimer()
@@ -78,25 +86,21 @@ class AppViewModel(private val dao: AppDao) : ViewModel() {
         if (isGameOver.value) return false
 
         val currentImage = questionImages.value[currentQuestionIndex.intValue]
-        // Extract answer from filename (e.g., level01_pic03_15.png -> 15)
         val correctAnswer = currentImage.substringAfterLast("_").substringBeforeLast(".").toIntOrNull() ?: 0
         val userAnswer = answerText.toIntOrNull() ?: -1
 
         val isCorrect = userAnswer == correctAnswer
-        
-        // Play sound effect
         playSound(context, if (isCorrect) R.raw.correct else R.raw.incorrect)
 
         if (isCorrect) {
-            score.intValue += 10 // Scoring 10 points per correct answer
+            score.intValue += 10
         }
 
         if (currentQuestionIndex.intValue < questionImages.value.size - 1) {
             currentQuestionIndex.intValue += 1
         } else {
             isGameOver.value = true
-            // Save the user and their score to DB when game ends
-            saveUserToDb()
+            saveUserToDb(context)
         }
         return isCorrect
     }
@@ -112,30 +116,55 @@ class AppViewModel(private val dao: AppDao) : ViewModel() {
         }
     }
 
-    private fun saveUserToDb() {
+    private fun saveUserToDb(context: Context) {
         viewModelScope.launch {
-            // Correctly populate the User fields for the score card
             val user = User(
                 username = currentUsername.value,
                 level = selectedLevel.intValue.toString(),
                 score = score.intValue,
                 duration = (currentTime.longValue / 1000).toInt(),
-                date = System.currentTimeMillis()
+                date = System.currentTimeMillis(),
+                isSynced = false
             )
-            dao.insert(user)
+            repository.insertUser(user)
+            
+            // Trigger background sync to Cloud (Firebase)
+            scheduleSync(context)
         }
+    }
+
+    private fun scheduleSync(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "firebase_sync",
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            syncRequest
+        )
     }
 
     fun addUser(username: String) {
         viewModelScope.launch {
             val user = User(username = username)
-            dao.insert(user)
+            repository.insertUser(user)
+        }
+    }
+
+    fun deleteUser(user: User) {
+        viewModelScope.launch {
+            repository.deleteUser(user)
         }
     }
 
     fun clearUsers() {
         viewModelScope.launch {
-            dao.deleteAll()
+            repository.clearAllUsers()
         }
     }
 }

@@ -26,19 +26,25 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.example.eduapp.database.AppDatabase
+import com.example.eduapp.repository.UserRepository
 import com.example.eduapp.viewmodel.AppViewModel
 import com.example.eduapp.viewmodel.AppViewModelFactory
 import com.example.eduapp.ui.theme.AppFont
 
 @Composable
 fun TestDBScreen(currentContext: Context, modifier: Modifier = Modifier) {
-    //steps to work with DB
+    // Steps to work with DB
     val db = Room.databaseBuilder(
         currentContext,
         AppDatabase::class.java,
         "app_db"
-    ).build()
-    val factory = AppViewModelFactory(db.appDao())
+    )
+    .fallbackToDestructiveMigration() // Prevents crash on schema changes
+    .build()
+    
+    // Updated to use UserRepository as per the new Clean Architecture requirements
+    val repository = UserRepository(db.appDao())
+    val factory = AppViewModelFactory(repository)
     val viewModel: AppViewModel = viewModel(factory = factory)
     val users by viewModel.users.collectAsStateWithLifecycle(initialValue = emptyList())
 

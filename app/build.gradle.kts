@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    //id("com.google.devtools.ksp")
     alias(libs.plugins.ksp)
 }
 
@@ -51,20 +50,19 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    
+    // UI Navigation
     implementation ("androidx.navigation:navigation-compose:2.7.7")
+    
+    // Room
     implementation ("androidx.room:room-runtime:2.8.4")
     ksp("androidx.room:room-compiler:2.8.4")
     implementation("androidx.room:room-ktx:2.8.4")
+    
+    // Lifecycle
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0") //2.8.7
-    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.10.0") //2.8.7
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
+    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
 
     // Koin
     implementation("io.insert-koin:koin-android:4.0.2")
@@ -72,4 +70,25 @@ dependencies {
 
     // Google Fonts
     implementation("androidx.compose.ui:ui-text-google-fonts:1.7.8")
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Testing
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    
+    // Android UI Testing
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

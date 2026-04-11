@@ -11,5 +11,6 @@ data class User(
     val level: String = "1",
     val score: Int = 0,
     val duration: Int = 0,
-    val date: Long = System.currentTimeMillis() // default current timestamp
+    val date: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false // Track if this record is synced to cloud
 )

@@ -2,11 +2,13 @@ package com.example.eduapp.screen
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
@@ -80,7 +82,7 @@ fun ScoreScreen(currentContext: Context, navController: NavHostController, modif
                     item { EmptyLevelPlaceholder() }
                 } else {
                     itemsIndexed(level1Top5) { index, user ->
-                        HighscoreCard(rank = index + 1, user = user)
+                        HighscoreCard(rank = index + 1, user = user, onDelete = { viewModel.deleteUser(user) })
                     }
                 }
 
@@ -92,7 +94,7 @@ fun ScoreScreen(currentContext: Context, navController: NavHostController, modif
                     item { EmptyLevelPlaceholder() }
                 } else {
                     itemsIndexed(level2Top5) { index, user ->
-                        HighscoreCard(rank = index + 1, user = user)
+                        HighscoreCard(rank = index + 1, user = user, onDelete = { viewModel.deleteUser(user) })
                     }
                 }
 
@@ -104,7 +106,7 @@ fun ScoreScreen(currentContext: Context, navController: NavHostController, modif
                     item { EmptyLevelPlaceholder() }
                 } else {
                     itemsIndexed(level3Top5) { index, user ->
-                        HighscoreCard(rank = index + 1, user = user)
+                        HighscoreCard(rank = index + 1, user = user, onDelete = { viewModel.deleteUser(user) })
                     }
                 }
             }
@@ -162,7 +164,7 @@ fun EmptyLevelPlaceholder() {
 }
 
 @Composable
-fun HighscoreCard(rank: Int, user: User) {
+fun HighscoreCard(rank: Int, user: User, onDelete: () -> Unit) {
     val medalColor = when (rank) {
         1 -> Color(0xFFFFD700) // Gold
         2 -> Color(0xFFC0C0C0) // Silver
@@ -211,11 +213,21 @@ fun HighscoreCard(rank: Int, user: User) {
                 )
             }
             
-            Text(
-                text = "${user.score}",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${user.score}",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Score",
+                        tint = Color.Red.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }
